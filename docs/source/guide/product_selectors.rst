@@ -35,8 +35,10 @@ Fields
    The suffix given to ``output_product_suffixes(...)`` by the creating
    algorithm.
    An algorithm that does not call ``output_product_suffixes(...)`` creates
-   its products with the empty suffix, so a suffix is only needed to tell
-   apart several products of the same type from one creator.
+   its products with the empty suffix.
+   Set a suffix whenever the other fields would match more than one product
+   of the right type, whether those products come from one creator or, when
+   ``creator`` is also unset, from several.
 
 ``stage``
    The stage that created the product; ``"CURRENT"`` means the job's own
@@ -69,10 +71,18 @@ If an algorithm unexpectedly does not run, check its layers, and run with
 Ambiguous selectors
 -------------------
 
-If a selector matches products that differ in suffix, creator or type,
-graph construction fails with ``Ambiguous product selector -- see errors``.
+If a selector matches products created by algorithms in the job that
+differ in suffix, creator or type, graph construction fails with
+``Ambiguous product selector -- see errors``.
 The preceding log messages list the candidates and say which field to add.
-Matching products that differ only in their layer are allowed.
+Matching products that differ only in their layer are allowed: each is
+delivered only for data cells of its own layer.
+
+Providers are stricter.
+If a selector matches more than one explicit provider, graph construction
+fails with ``Multiple explicit providers found``, even when the providers
+differ only in their layer; set ``layer`` (or another field) to pick one.
+Likewise, at most one implicit provider supplied by a source may match.
 
 Selectors in configuration files
 --------------------------------
@@ -104,6 +114,8 @@ an object with any of the keys ``creator``, ``layer``, ``suffix`` and
 
 A JSON array of selector objects can be read as
 ``std::array<phlex::product_selector, N>``.
+Only the first ``N`` elements are read: extra elements are ignored without
+an error, and an array with fewer than ``N`` elements makes ``get`` throw.
 Missing keys leave the corresponding fields unset.
 Other keys are ignored without an error, so a misspelled key (``suffx``)
 silently widens the selector.
